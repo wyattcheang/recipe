@@ -7,6 +7,21 @@
 
 import SwiftUI
 
+@Observable
+class AlertControl {
+    var title: String
+    var message: String
+    var dismissMessage: String
+    var isPresented: Bool
+    
+    init(title: String = "", message: String = "", dismiss: String = "OK", isPresented: Bool = false) {
+        self.title = title
+        self.message = message
+        self.dismissMessage = dismiss
+        self.isPresented = isPresented
+    }
+}
+
 struct ContentView: View {
     @State private var user = UserModel()
     @State private var alert = AlertControl()
