@@ -12,6 +12,7 @@ struct EditRecipeView: View {
     
     @State private var alert = AlertControl()
     @Binding var recipe: Recipe
+    
     var body: some View {
         RecipeMenuView(recipe: $recipe, alert: $alert, placeholder: "Update", action: editRecipe)
     }
@@ -25,13 +26,11 @@ struct EditRecipeView: View {
                     alert.message = "Recipe updated successfully"
                     alert.dismissMessage = "OK"
                     alert.isPresented.toggle()
-                    print("called1")
                 case .failure(let failure):
                     alert.title = "Failed"
                     alert.message = failure.localizedDescription
                     alert.dismissMessage = "OK"
                     alert.isPresented.toggle()
-                    print("called2")
                 }
             }
         }

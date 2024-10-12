@@ -106,12 +106,17 @@ struct RecipeDetailView: View {
             do {
                 let deleteSuccess = await Database.shared.deleteRecipe(recipe: recipe)
                 if deleteSuccess {
-                    dismiss()
                     alert.title = "Success"
                     alert.message = "Recipe deleted successfully."
                     alert.dismissMessage = "OK"
+                    alert.isPresented.toggle()
+                    dismiss()
+                } else {
+                    alert.title = "Error"
+                    alert.message = "Failed to delete the recipe."
+                    alert.dismissMessage = "OK"
+                    alert.isPresented.toggle()
                 }
-                alert.isPresented.toggle()
             }
         }
     }

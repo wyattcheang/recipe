@@ -12,7 +12,6 @@ struct AddRecipeView: View {
     @Environment(\.dismiss) var dismiss
     @State private var alert = AlertControl()
     @State var recipe = Recipe()
-    @Binding var reload: Bool
     
     var body: some View {
         RecipeMenuView(recipe: $recipe, alert: $alert, placeholder: "Add", action: addRecipe)
@@ -31,13 +30,11 @@ struct AddRecipeView: View {
                     alert.message = "Recipe added successfully"
                     alert.dismissMessage = "OK"
                     alert.isPresented.toggle()
-                    print("called1")
                 case .failure(let failure):
                     alert.title = "Failed"
                     alert.message = failure.localizedDescription
                     alert.dismissMessage = "OK"
                     alert.isPresented.toggle()
-                    print("called2")
                 }
             }
         }

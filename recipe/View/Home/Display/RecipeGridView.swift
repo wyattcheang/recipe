@@ -23,7 +23,7 @@ struct RecipeGridView: View {
                     ForEach(0..<columns, id: \.self) { columnIndex in
                         LazyVStack(spacing: spacing) {
                             ForEach(recipes.indices.filter { $0 % columns == columnIndex }, id: \.self) { index in
-                                RecipeCardView(recipe: $recipes[index])
+                                RecipeCardView(recipe: $recipes[index], reload: fetchData)
                             }
                         }
                     }

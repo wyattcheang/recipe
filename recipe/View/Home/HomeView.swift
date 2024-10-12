@@ -8,16 +8,14 @@
 import SwiftUI
 
 struct HomeView: View {
-    @Environment(\.dismiss) var dismiss
     @Environment(\.user) var user: UserModel
-    
-    @State private var alert = AlertControl()
+
     @State private var recipes: [Recipe] = []
     @State private var recipeTypes: [RecipeType] = []
     @State private var selectedRecipeType: RecipeType?
     
     @State var isSheetPresented: Bool = false
-    @State var reload: Bool = false
+    @State var isRecipeModified: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -49,7 +47,6 @@ struct HomeView: View {
                         .buttonStyle(CircleStyle())
                         .padding()
                     }
-                    .environment(\.alert, alert)
             }
             .onAppear {
                 fetchRecipeType()
@@ -60,7 +57,7 @@ struct HomeView: View {
                 }
             }
             .sheet(isPresented: $isSheetPresented, onDismiss: fetchAllRecipes) {
-                AddRecipeView(reload: $reload)
+                AddRecipeView()
             }
         }
     }
@@ -71,7 +68,9 @@ struct HomeView: View {
             case .success(let types):
                 DispatchQueue.main.async {
                     recipeTypes = types
-                    selectedRecipeType = recipeTypes.first
+                    if selectedRecipeType == nil {
+                        selectedRecipeType = recipeTypes.first
+                    }
                 }
             case .failure(let failure):
                 print(failure)

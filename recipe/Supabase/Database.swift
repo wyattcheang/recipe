@@ -14,16 +14,18 @@ protocol ImageLoadable: AnyObject {
 }
 
 extension ImageLoadable {
-    func fetchImageAsync() async {
-        await withCheckedContinuation { continuation in
+    func fetchImageAsync() async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            if imagePath.isEmpty { return }
             Storage.shared.fetchImage(bucket: "image", path: imagePath) { result in
                 switch result {
                 case .success(let data):
                     self.image = data
+                    continuation.resume(returning: ())
                 case .failure(let error):
                     print("Failed to fetch image: \(error)")
+                    continuation.resume(throwing: error) // Resume with an error if fetching fails
                 }
-                continuation.resume()
             }
         }
     }

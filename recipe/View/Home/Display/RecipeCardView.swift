@@ -10,6 +10,7 @@ import SwiftUI
 
 struct RecipeCardView: View {
     @Binding var recipe: Recipe
+    var reload: () -> Void
     
     var body: some View {
         NavigationLink(destination: RecipeDetailView(recipe: $recipe)) {
@@ -42,17 +43,19 @@ struct RecipeCardView: View {
         .buttonStyle(PlainButtonStyle())
         .onAppear {
             Task {
-                await recipe.fetchImageAsync()
+                reload()
+                try await recipe.fetchImageAsync()
             }
         }
-        .onChange(of: recipe) { oldValue, newValue in
+        .onChange(of: recipe.image) { oldValue, newValue in
             Task {
-                await recipe.fetchImageAsync()
+                reload()
+                try await recipe.fetchImageAsync()
             }
         }
     }
 }
-
-#Preview {
-    RecipeCardView(recipe: .constant(.init(id: UUID(), title: "Grilled Chicken", description: "hi", serving: 1, type: RecipeType(id: 1, name: "Dinner"), steps: [], ingredients: [], imagePath: "")))
-}
+//
+//#Preview {
+//    RecipeCardView(recipe: .constant(.init(id: UUID(), title: "Grilled Chicken", description: "hi", serving: 1, type: RecipeType(id: 1, name: "Dinner"), steps: [], ingredients: [], imagePath: "")))
+//}
