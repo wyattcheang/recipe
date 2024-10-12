@@ -23,6 +23,7 @@ class AlertControl {
 }
 
 struct ContentView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var user = UserModel()
     @State private var alert = AlertControl()
     
@@ -38,6 +39,7 @@ struct ContentView: View {
             case .authenticated:
                 HomeView()
                     .environment(\.user, user)
+                    .environment(\.alert, alert)
             }
         }
         .task {
@@ -48,7 +50,9 @@ struct ContentView: View {
             Alert(
                 title: Text(alert.title),
                 message: Text(alert.message),
-                dismissButton: .default(Text(alert.dismissMessage))
+                dismissButton: .default(Text(alert.dismissMessage)) {
+                    dismiss()
+                }
             )
         }
     }

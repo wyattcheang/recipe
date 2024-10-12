@@ -119,11 +119,9 @@ struct AuthView: View {
             }
             .frame(minHeight: 350)
             
-            
             Spacer()
-            Button {
-                continueWithGoogle()
-            } label: {
+            Button { continueWithGoogle()}
+            label: {
                 Image("google")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
@@ -145,41 +143,34 @@ struct AuthView: View {
                     Text("or")
                         .padding(.horizontal, 6)
                         .font(.caption)
-                        .background(.white)
                         .foregroundStyle(.secondary)
                 )
                 .padding(.vertical, 6)
             
-            Group {
-                TextField("Email", text: $credential.email)
-                    .keyboardType(.emailAddress)
-                    .textContentType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
-                    .focused($focus, equals: .email)
+            TextField("Email", text: $credential.email)
+                .keyboardType(.emailAddress)
+                .textContentType(.emailAddress)
+                .textInputAutocapitalization(.never)
+                .disableAutocorrection(true)
+                .focused($focus, equals: .email)
+                .onSubmit(onSubmit)
+                .textFieldStyle(RectStyle())
+            
+            TextField("Password", text: $credential.password)
+                .focused($focus, equals: .password)
+                .onSubmit(onSubmit)
+                .textFieldStyle(RectStyle())
+            
+            if credential.flow == .signUp {
+                TextField("Confirm Password", text: $credential.confirmPassword)
+                    .animation(.easeInOut, value: credential.flow)
+                    .focused($focus, equals: .confirmPassword)
                     .onSubmit(onSubmit)
-                
-                TextField("Password", text: $credential.password)
-                    .focused($focus, equals: .password)
-                    .onSubmit(onSubmit)
-                
-                if credential.flow == .signUp {
-                    TextField("Confirm Password", text: $credential.confirmPassword)
-                        .animation(.easeInOut, value: credential.flow)
-                        .focused($focus, equals: .confirmPassword)
-                        .onSubmit(onSubmit)
-                }
+                    .textFieldStyle(RectStyle())
             }
-            .padding()
-            .background(Color(uiColor: .systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             
             Button(credential.flow.rawValue, action: authentication)
-                .padding()
-                .frame(maxWidth: .infinity)
-                .foregroundColor(.white)
-                .background(credential.isValid ? .accent : Color(uiColor: .systemGray4))
-                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .buttonStyle(AccentButtonStyle())
                 .disabled(!credential.isValid)
                 .animation(.interactiveSpring, value: credential.flow)
             Spacer()
@@ -207,6 +198,13 @@ struct AuthView: View {
         } else if focus == .confirmPassword && credential.isValid {
             authentication()
         }
+    }
+}
+
+struct PasswordField: View {
+    
+    var body: some View {
+        TextField("Password", text: .constant(""))
     }
 }
 

@@ -1,85 +1,48 @@
 //
-//  storage.swift
+//  Storage.swift
 //  recipe
 //
-//  Created by Wyatt Cheang on 10/10/2024.
+//  Created by Wyatt Cheang on 12/10/2024.
 //
 
 import Foundation
+import UIKit
 
-class Recipe: Identifiable, Decodable {
-    var id: UUID
-    var title: String
-    var description: String
-    var servings: Int
-    var category: RecipeType
+struct Storage {
+    static let shared = Storage()
     
-    init(id: UUID, title: String, description: String, servings: Int, category: RecipeType) {
-        self.id = id
-        self.title = title
-        self.description = description
-        self.servings = servings
-        self.category = category
-    }
-}
-
-class RecipeType: Identifiable, Decodable {
-    var id: Int
-    var name: String
-    
-    init(id: Int, name: String) {
-        self.id = id
-        self.name = name
-    }
-    
-    private enum CodingKeys: String, CodingKey {
-        case id
-        case name
-    }
-}
-
-class RecipeIngredient: Identifiable, Decodable {
-    var id: UUID
-    var name: String
-    var quantity: String
-    var unit: Float
-    
-    init(id: UUID, name: String, quantity: String, unit: Float) {
-        self.id = id
-        self.name = name
-        self.quantity = quantity
-        self.unit = unit
-    }
-}
-
-class RecipeStep: Identifiable, Decodable {
-    var id: UUID
-    var number: String
-    var description: String
-    
-    init(id: UUID, number: String, description: String) {
-        self.id = id
-        self.number = number
-        self.description = description
-    }
-}
-
-class Database {
-    static let shared = Database()
-    
-    func fetchRecipeType(completion: @escaping (Result<[RecipeType], Error>) -> Void) {
+    func fetchImage(bucket: String, path: String, completion: @escaping (Result<Data, Error>) -> Void) {
         Task {
             do {
-                let types: [RecipeType] = try await supabase
-                    .from("type")
-                    .select()
-                    .execute()
-                    .value
-                completion(.success(types))
-            } catch {
+                let data = try await supabase.storage
+                    .from(bucket)
+                    .download(path: path)
+                if UIImage(data: data) != nil {
+                    completion(.success(data))
+                } else {
+                    print("path")
+                    completion(.failure(NSError(domain: "", code: -1,
+                                                userInfo: [NSLocalizedDescriptionKey: "Failed to convert data to UIImage"])))
+                }
+            }
+            catch {
+                print(error)
                 completion(.failure(error))
             }
         }
-        
+    }
+    
+    func uploadImage(bucket: String, path: String, data: Data, completion: @escaping (Result<Void, Error>) -> Void) {
+        Task {
+            do {
+                try await supabase.storage
+                    .from(bucket)
+                    .upload(path, data: data)
+            } catch {
+                print("here")
+                completion(.failure(error))
+                print("here")
+            }
+        }
     }
 }

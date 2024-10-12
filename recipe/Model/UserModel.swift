@@ -22,7 +22,7 @@ class UserModel {
 
     init() {
         self.data = nil
-        self.authState = .unauthenticated
+        self.authState = .authenticating
         self.errorMessage = ""
     }
     

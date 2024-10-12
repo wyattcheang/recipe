@@ -8,59 +8,83 @@
 import SwiftUI
 
 struct HomeView: View {
-    @State var selectedRecipeType: RecipeType?
-    @State var recipeTypes: [RecipeType] = []
     @Environment(\.user) var user: UserModel
+    @State private var recipes: [Recipe] = []
+    @State private var recipeTypes: [RecipeType] = []
+    @State private var selectedRecipeType: RecipeType?
+    
+    @State var isSheetPresented: Bool = false
     
     var body: some View {
-        VStack {
-            HStack {
-                Text("Recipes")
-                .font(.title)
-                .fontWeight(.heavy)
-                .fontDesign(.serif)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                Spacer()
-                Button {
-                    Task {
-                        await user.signOut()
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Text("Recipes")
+                        .font(.title)
+                        .fontWeight(.heavy)
+                        .fontDesign(.serif)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Spacer()
+                    Button {
+                        Task {
+                            await user.signOut()
+                        }
+                    } label: {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
                     }
-                } label: {
-                    Image(systemName: "rectangle.portrait.and.arrow.right")
                 }
-            }
-            .padding(16)
-            ScrollView(.vertical) {
+                .padding(.horizontal)
                 if !recipeTypes.isEmpty {
                     TabButtonBar(types: recipeTypes, selectedType: $selectedRecipeType)
                 }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .overlay(alignment: .bottomTrailing) {
-                Button {
-                } label: {
-                    Image(systemName: "plus")
-                        .bold()
+                RecipeGridView(recipes: $recipes, fetchData: fetchAllRecipes)
+                    .overlay(alignment: .bottomTrailing) {
+                        Button("Add Recipe", systemImage: "plus") {
+                            isSheetPresented.toggle()
+                        }
+                        .buttonStyle(CircleStyle())
                         .padding()
-                        .background(.accent)
-                        .foregroundStyle(.white)
-                        .clipShape(.circle)
+                    }
+            }
+            .onAppear {
+                fetchRecipeType()
+            }
+            .onChange(of: selectedRecipeType) { oldValue, newValue in
+                if newValue != nil {
+                    fetchAllRecipes()
                 }
-                .padding()
+            }
+            .sheet(isPresented: $isSheetPresented) {
+                AddRecipeView(types: recipeTypes)
             }
         }
-        .onAppear {
-            Database.shared.fetchRecipeType(completion: { result in
+    }
+    
+    func fetchRecipeType() {
+        Database.shared.fetchRecipeType(completion: { result in
+            switch result {
+            case .success(let types):
+                DispatchQueue.main.async {
+                    recipeTypes = types
+                    selectedRecipeType = recipeTypes.first
+                }
+            case .failure(let failure):
+                print(failure)
+            }
+        })
+    }
+    
+    func fetchAllRecipes() {
+        if let type = selectedRecipeType {
+            Database.shared.fetchRecipes(type) { result in
                 switch result {
-                case .success(let types):
-                    DispatchQueue.main.async {
-                        recipeTypes = types
-                        selectedRecipeType = recipeTypes.first
-                    }
+                case .success(let data):
+                    recipes = data
+                    print(recipes.count)
                 case .failure(let failure):
                     print(failure)
                 }
-            })
+            }
         }
     }
 }
@@ -89,18 +113,16 @@ struct TabButton: View {
     @Binding var isSelected: Bool
     
     var body: some View {
-        Button(action: {
+        Button(type.name) {
             withAnimation {
                 isSelected = true
             }
-        }) {
-            Text(type.name)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(isSelected ? Color.accentColor : Color(UIColor.systemGray6))
-                .foregroundColor(isSelected ? .white : .primary)
-                .clipShape(Capsule())
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(isSelected ? Color.accentColor : Color(UIColor.secondarySystemBackground))
+        .foregroundColor(isSelected ? .white : .primary)
+        .clipShape(.capsule)
     }
 }
 
