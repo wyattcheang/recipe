@@ -8,12 +8,15 @@
 import SwiftUI
 import PhotosUI
 
-struct AddRecipeView: View {
-    @State private var alert = AlertControl()
+struct RecipeMenuView: View {
     @Environment(\.dismiss) var dismiss
     
-    let types: [RecipeType]
-    @State private var recipe = Recipe()
+    @Binding var recipe: Recipe
+    @Binding var alert: AlertControl
+    var placeholder: String
+    var action: () -> Void
+    
+    @State private var types: [RecipeType] = []
     @State private var ingredient = RecipeIngredient()
     @State private var step = RecipeStep(order: 1)
     @State private var draggedStep: RecipeStep?
@@ -54,9 +57,10 @@ struct AddRecipeView: View {
                 VStack(alignment: .leading) {
                     headingText("Steps")
                     ForEach(Array(recipe.steps.enumerated()), id: \.element.id) { index, step in
-                        ItemLabel(text: "\(step.order). \(step.description)",
+                        ItemLabel(text: step.description,
                                   delete: { deleteStep(at: index) },
-                                  tapped: { modifyStep(at: index) })
+                                  tapped: { modifyStep(at: index) },
+                                  isDraggable: true)
                         .onDrag {
                             self.draggedStep = step
                             return NSItemProvider(object: String(step.id.uuidString) as NSString)
@@ -97,7 +101,7 @@ struct AddRecipeView: View {
                 }
                 .padding(.horizontal)
                 VStack {
-                    Button("Add recipe", action: addRecipe)
+                    Button(placeholder, action: action)
                         .buttonStyle(AccentButtonStyle())
                         .disabled(!recipe.isValid)
                 }
@@ -106,6 +110,13 @@ struct AddRecipeView: View {
             .frame(maxHeight: .infinity)
         }
         .padding(.vertical, 24)
+
+        .onChange(of: recipe.steps) {
+            updateStepOrders()
+        }
+        .onAppear {
+            fetchRecipeType()
+        }
         .alert(isPresented: $alert.isPresented) {
             Alert(
                 title: Text(alert.title),
@@ -115,23 +126,24 @@ struct AddRecipeView: View {
                 }
             )
         }
-        .onChange(of: recipe.steps) {
-            updateStepOrders()
-        }
+    }
+    
+    private func fetchRecipeType() {
+        Database.shared.fetchRecipeType(completion: { result in
+            switch result {
+            case .success(let data):
+                DispatchQueue.main.async {
+                    types = data
+                }
+            case .failure(let failure):
+                print(failure)
+            }
+        })
     }
     
     private func headingText(_ text: String) -> some View {
         Text(text)
             .font(.headline)
-    }
-    
-    private func listItemText(_ text: String) -> some View {
-        Text(text)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(Color(UIColor.secondarySystemBackground))
-            .clipShape(.rect(cornerRadius: 16, style: .continuous))
-            .padding(.horizontal)
     }
     
     private func addIngredient() {
@@ -174,31 +186,6 @@ struct AddRecipeView: View {
             step.order = index + 1
         }
     }
-    
-    private func addRecipe() {
-        if let file = recipe.image,
-           let _ = UIImage(data: file) {
-            self.recipe.imagePath = "\(recipe.id.uuidString)"
-        }
-        Task {
-            Database.shared.addRecipe(recipe) { result in
-                switch result {
-                case .success(_):
-                    alert.title = "Success"
-                    alert.message = "Recipe added successfully"
-                    alert.dismissMessage = "OK"
-                    alert.isPresented.toggle()
-                    print("called1")
-                case .failure(let failure):
-                    alert.title = "Failed"
-                    alert.message = failure.localizedDescription
-                    alert.dismissMessage = "OK"
-                    alert.isPresented.toggle()
-                    print("called2")
-                }
-            }
-        }
-    }
 }
 
 
@@ -233,9 +220,13 @@ struct ItemLabel: View {
     var text: String
     var delete: () -> Void
     var tapped: () -> Void
+    var isDraggable: Bool = false
     
     var body: some View {
         HStack {
+            if (isDraggable) {
+                Image(systemName: "line.3.horizontal")
+            }
             Text(text)
                 .font(.headline)
             Button("delete", systemImage: "minus", action: delete)
@@ -337,8 +328,4 @@ struct AddStepView: View {
         .frame(width: .infinity)
         .clipShape(.rect(cornerRadius: 16))
     }
-}
-
-#Preview {
-    AddRecipeView(types: [RecipeType(id: 1, name: "Salad"), RecipeType(id: 2, name: "Breakfast")])
 }

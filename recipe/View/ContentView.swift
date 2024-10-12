@@ -39,7 +39,6 @@ struct ContentView: View {
             case .authenticated:
                 HomeView()
                     .environment(\.user, user)
-                    .environment(\.alert, alert)
             }
         }
         .task {

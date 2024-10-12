@@ -39,3 +39,12 @@ extension String {
     }
     
 }
+
+extension Double {
+    var toString: String {
+        let formatter = NumberFormatter()
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 2
+        return formatter.string(from: NSNumber(value: self)) ?? "\(self)"
+    }
+}

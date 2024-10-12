@@ -8,8 +8,13 @@
 import SwiftUI
 
 struct RecipeDetailView: View {
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.alert) var alert: AlertControl
+    
     @Binding var recipe: Recipe
     @State private var servingMultiplier: Double = 1.0
+    @State var isSheetPresented: Bool = false
+    @State var isDeleteConfirmed: Bool = false
     
     var body: some View {
         ScrollView {
@@ -64,16 +69,51 @@ struct RecipeDetailView: View {
         .navigationTitle(recipe.type?.name ?? "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("edit", systemImage:"slider.horizontal.3") {
+            Menu {
+                Button(action: {
+                    isSheetPresented.toggle() // Action for editing
+                }) {
+                    Label("Edit", systemImage: "slider.horizontal.3")
                 }
+                Button(action: {
+                    isDeleteConfirmed.toggle()
+                }) {
+                    Label("Delete", systemImage: "trash")
+                        .foregroundColor(.red) // Optional: Change color to red for delete action
+                }
+            } label: {
+                Label("Actions", systemImage: "ellipsis.circle")
             }
+        }
+        .sheet(isPresented: $isSheetPresented) {
+            EditRecipeView(recipe: $recipe)
+        }
+        .confirmationDialog("Are you sure you want to delete this recipe?", isPresented: $isDeleteConfirmed, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                deleteRecipe()
+            }
+            Button("Cancel", role: .cancel) {}
         }
     }
     
     private func adjustServing(_ change: Int) {
         let newMultiplier = servingMultiplier + (Double(change) * 0.5)
         servingMultiplier = max(0.5, newMultiplier)
+    }
+    
+    private func deleteRecipe() {
+        Task {
+            do {
+                let deleteSuccess = await Database.shared.deleteRecipe(recipe: recipe)
+                if deleteSuccess {
+                    dismiss()
+                    alert.title = "Success"
+                    alert.message = "Recipe deleted successfully."
+                    alert.dismissMessage = "OK"
+                }
+                alert.isPresented.toggle()
+            }
+        }
     }
 }
 
@@ -121,18 +161,11 @@ struct IngredientsList: View {
                 HStack {
                     Text(ingredient.name)
                     Spacer()
-                    Text("\(formatQuantity(ingredient.quantity * servingMultiplier)) \(ingredient.unit)")
+                    Text("\((ingredient.quantity * servingMultiplier).toString) \(ingredient.unit)")
                 }
                 Divider()
             }
         }
-    }
-    
-    private func formatQuantity(_ quantity: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 2
-        return formatter.string(from: NSNumber(value: quantity)) ?? "\(quantity)"
     }
 }
 

@@ -11,6 +11,20 @@ import UIKit
 struct Storage {
     static let shared = Storage()
     
+    func deleteImage(bucket: String, path: String, completion: @escaping (Result<Void, Error>) -> Void) {
+        Task {
+            do {
+                let _ = try await supabase.storage
+                    .from(bucket)
+                    .remove(paths: [path])
+                completion(.success(()))
+            }
+            catch {
+                print(error)
+            }
+        }
+    }
+    
     func fetchImage(bucket: String, path: String, completion: @escaping (Result<Data, Error>) -> Void) {
         Task {
             do {
@@ -20,7 +34,6 @@ struct Storage {
                 if UIImage(data: data) != nil {
                     completion(.success(data))
                 } else {
-                    print("path")
                     completion(.failure(NSError(domain: "", code: -1,
                                                 userInfo: [NSLocalizedDescriptionKey: "Failed to convert data to UIImage"])))
                 }
@@ -39,9 +52,8 @@ struct Storage {
                     .from(bucket)
                     .upload(path, data: data)
             } catch {
-                print("here")
+                print(error)
                 completion(.failure(error))
-                print("here")
             }
         }
     }

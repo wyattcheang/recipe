@@ -8,12 +8,16 @@
 import SwiftUI
 
 struct HomeView: View {
+    @Environment(\.dismiss) var dismiss
     @Environment(\.user) var user: UserModel
+    
+    @State private var alert = AlertControl()
     @State private var recipes: [Recipe] = []
     @State private var recipeTypes: [RecipeType] = []
     @State private var selectedRecipeType: RecipeType?
     
     @State var isSheetPresented: Bool = false
+    @State var reload: Bool = false
     
     var body: some View {
         NavigationStack {
@@ -45,6 +49,7 @@ struct HomeView: View {
                         .buttonStyle(CircleStyle())
                         .padding()
                     }
+                    .environment(\.alert, alert)
             }
             .onAppear {
                 fetchRecipeType()
@@ -54,8 +59,8 @@ struct HomeView: View {
                     fetchAllRecipes()
                 }
             }
-            .sheet(isPresented: $isSheetPresented) {
-                AddRecipeView(types: recipeTypes)
+            .sheet(isPresented: $isSheetPresented, onDismiss: fetchAllRecipes) {
+                AddRecipeView(reload: $reload)
             }
         }
     }
@@ -75,12 +80,13 @@ struct HomeView: View {
     }
     
     func fetchAllRecipes() {
+        print("fetching")
         if let type = selectedRecipeType {
             Database.shared.fetchRecipes(type) { result in
                 switch result {
                 case .success(let data):
                     recipes = data
-                    print(recipes.count)
+                    print("fetched")
                 case .failure(let failure):
                     print(failure)
                 }
@@ -98,7 +104,7 @@ struct TabButtonBar: View {
             HStack(spacing: 12) {
                 ForEach(types) { type in
                     TabButton(type: type, isSelected: Binding(
-                        get: { selectedType?.id == type.id },
+                        get: { selectedType == type },
                         set: { if $0 { selectedType = type } }
                     ))
                 }

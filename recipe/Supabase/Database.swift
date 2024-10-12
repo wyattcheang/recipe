@@ -40,6 +40,7 @@ class Recipe: Identifiable, Codable, Hashable, ImageLoadable {
     var ingredients: [RecipeIngredient]
     var imagePath: String
     var image: Data?
+    var imageURL: String?
     
     var isValid: Bool {
         guard !title.isEmpty,
@@ -51,7 +52,7 @@ class Recipe: Identifiable, Codable, Hashable, ImageLoadable {
         }
         return steps.allSatisfy { $0.isValid } && ingredients.allSatisfy { $0.isValid }
     }
-
+    
     private var typeId: Int {
         return type?.id ?? 0
     }
@@ -122,10 +123,17 @@ class Recipe: Identifiable, Codable, Hashable, ImageLoadable {
         try container.encode(typeId, forKey: .typeId)
         try container.encode(imagePath, forKey: .imagePath)
     }
-
+    
     func assignRecipeId() {
         ingredients.forEach { $0.recipeId = self.id }
         steps.forEach { $0.recipeId = self.id }
+    }
+    
+    func generateImagePath() {
+        if let file = self.image,
+           let _ = UIImage(data: file) {
+            self.imagePath = "\(self.id.uuidString)"
+        }
     }
 }
 
@@ -172,9 +180,9 @@ class RecipeIngredient: Identifiable, Codable, Hashable {
     var recipeId: UUID?
     
     var text: String {
-        return ("\(self.name) \(self.quantity) \(self.unit)")
+        return ("\(self.name) \(self.quantity.toString) \(self.unit)")
     }
-
+    
     var isValid: Bool {
         return !name.isEmpty && quantity > 0 && !unit.isEmpty
     }
@@ -219,7 +227,7 @@ class RecipeIngredient: Identifiable, Codable, Hashable {
         self.name = try container.decode(String.self, forKey: .name)
         self.quantity = try container.decode(Double.self, forKey: .quantity)
         self.unit = try container.decode(String.self, forKey: .unit)
-//        self.recipeId = try container.decode(UUID.self, forKey: .recipeId)
+        //        self.recipeId = try container.decode(UUID.self, forKey: .recipeId)
     }
     
     // Encoding method
@@ -240,7 +248,7 @@ class RecipeStep: Identifiable, Codable, Hashable {
     var description: String
     
     var recipeId: UUID?
-
+    
     var isValid: Bool {
         return order > 0 && !description.isEmpty
     }
@@ -261,7 +269,7 @@ class RecipeStep: Identifiable, Codable, Hashable {
     static func == (lhs: RecipeStep, rhs: RecipeStep) -> Bool {
         ObjectIdentifier(lhs) == ObjectIdentifier(rhs)
     }
-
+    
     func hash(into hasher: inout Hasher) {
         hasher.combine(ObjectIdentifier(self))
     }
@@ -306,12 +314,62 @@ class Database {
                 completion(.failure(error))
             }
         }
-        
+    }
+    
+    func editRecipe(_ recipe: Recipe, completion: @escaping (Result<Void, Error>) -> Void) {
+        Task {
+            do {
+                let deleteSuccess = await deleteRecipe(recipe: recipe)
+
+                if deleteSuccess {
+                    // After deletion, add the recipe back
+                    addRecipe(recipe) { result in
+                        switch result {
+                        case .success:
+                            completion(.success(()))
+                        case .failure(let failure):
+                            completion(.failure(failure))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    func deleteRecipe(recipe: Recipe) async -> Bool {
+        do {
+            // Generate the image path
+            recipe.generateImagePath()
+            
+            // Delete recipe from the database
+            try await supabase
+                .from("recipe")
+                .delete()
+                .eq("id", value: recipe.id)
+                .execute()
+            
+            // Delete the image asynchronously
+            let imageDeleteSuccess = await withCheckedContinuation { continuation in
+                Storage.shared.deleteImage(bucket: "image", path: recipe.imagePath) { result in
+                    switch result {
+                    case .success:
+                        continuation.resume(returning: true)
+                    case .failure:
+                        continuation.resume(returning: false)
+                    }
+                }
+            }
+            
+            return imageDeleteSuccess
+        } catch {
+            return false
+        }
     }
     
     func addRecipe(_ recipe: Recipe, completion: @escaping (Result<Void, Error>) -> Void) {
         Task {
             do {
+                recipe.generateImagePath()
                 recipe.assignRecipeId()
                 try await supabase
                     .from("recipe")
@@ -361,6 +419,7 @@ class Database {
                     .select("""
                     id,
                     type_id,
+                    type:type(id, name),
                     serving,
                     description,
                     title,
@@ -370,7 +429,6 @@ class Database {
                     """)
                     .execute()
                     .value
-
                 completion(.success(recipes))
             } catch {
                 completion(.failure(error))
