@@ -9,34 +9,27 @@ import SwiftUI
 import PhotosUI
 
 struct AddRecipeView: View {
+    @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
+    
+    var type: RecipeType
     @State private var alert = AlertControl()
-    @State var recipe = Recipe()
+    @State private var recipe = Recipe()
     
     var body: some View {
-        RecipeMenuView(recipe: $recipe, alert: $alert, placeholder: "Add", action: addRecipe)
+        RecipeMenuView(recipe: recipe, alert: $alert, placeholder: "Add", action: addRecipe)
+            .onAppear {
+                recipe.type = type
+            }
     }
     
     private func addRecipe() {
-        if let file = recipe.image,
-           let _ = UIImage(data: file) {
-            self.recipe.imagePath = "\(recipe.id.uuidString)"
-        }
-        Task {
-            Database.shared.addRecipe(recipe) { result in
-                switch result {
-                case .success(_):
-                    alert.title = "Success"
-                    alert.message = "Recipe added successfully"
-                    alert.dismissMessage = "OK"
-                    alert.isPresented.toggle()
-                case .failure(let failure):
-                    alert.title = "Failed"
-                    alert.message = failure.localizedDescription
-                    alert.dismissMessage = "OK"
-                    alert.isPresented.toggle()
-                }
-            }
-        }
+        let recipe = recipe
+        modelContext.insert(recipe)
+        
+        alert.title = "Success"
+        alert.message = "Recipe added successfully"
+        alert.dismissMessage = "OK"
+        alert.isPresented.toggle()
     }
 }

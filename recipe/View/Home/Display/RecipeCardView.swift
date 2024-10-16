@@ -9,11 +9,11 @@ import Foundation
 import SwiftUI
 
 struct RecipeCardView: View {
-    @Binding var recipe: Recipe
-    var reload: () -> Void
+    @Bindable var recipe: Recipe
+//    var reload: () -> Void
     
     var body: some View {
-        NavigationLink(destination: RecipeDetailView(recipe: $recipe)) {
+        NavigationLink(destination: RecipeDetailView(recipe: recipe)) {
             VStack(alignment: .leading, spacing: 8) {
                 ZStack {
                     if let data = recipe.image,
@@ -41,21 +41,9 @@ struct RecipeCardView: View {
             .cornerRadius(10)
         }
         .buttonStyle(PlainButtonStyle())
-        .onAppear {
-            Task {
-                reload()
-                try await recipe.fetchImageAsync()
-            }
-        }
-        .onChange(of: recipe.image) { oldValue, newValue in
-            Task {
-                reload()
-                try await recipe.fetchImageAsync()
-            }
-        }
     }
 }
-//
+
 //#Preview {
 //    RecipeCardView(recipe: .constant(.init(id: UUID(), title: "Grilled Chicken", description: "hi", serving: 1, type: RecipeType(id: 1, name: "Dinner"), steps: [], ingredients: [], imagePath: "")))
 //}

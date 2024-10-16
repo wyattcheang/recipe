@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import SwiftData
 import GoogleSignIn
 
 @main
@@ -17,5 +18,6 @@ struct recipeApp: App {
                     GIDSignIn.sharedInstance.handle(url)
                 }
         }
+        .modelContainer(for: Recipe.self)
     }
 }

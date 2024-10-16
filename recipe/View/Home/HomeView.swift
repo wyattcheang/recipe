@@ -36,28 +36,27 @@ struct HomeView: View {
                     }
                 }
                 .padding(.horizontal)
-                if !recipeTypes.isEmpty {
+                if !recipeTypes.isEmpty, let type = selectedRecipeType {
                     TabButtonBar(types: recipeTypes, selectedType: $selectedRecipeType)
-                }
-                RecipeGridView(recipes: $recipes, fetchData: fetchAllRecipes)
-                    .overlay(alignment: .bottomTrailing) {
-                        Button("Add Recipe", systemImage: "plus") {
-                            isSheetPresented.toggle()
+                    RecipeGridView(type: type)
+                        .overlay(alignment: .bottomTrailing) {
+                            Button("Add Recipe", systemImage: "plus") {
+                                isSheetPresented.toggle()
+                            }
+                            .buttonStyle(CircleStyle())
+                            .padding()
                         }
-                        .buttonStyle(CircleStyle())
-                        .padding()
-                    }
+                } else {
+                    ProgressView()
+                }
             }
             .onAppear {
                 fetchRecipeType()
             }
-            .onChange(of: selectedRecipeType) { oldValue, newValue in
-                if newValue != nil {
-                    fetchAllRecipes()
+            .sheet(isPresented: $isSheetPresented) {
+                if let type = selectedRecipeType {
+                    AddRecipeView(type: type)
                 }
-            }
-            .sheet(isPresented: $isSheetPresented, onDismiss: fetchAllRecipes) {
-                AddRecipeView()
             }
         }
     }
@@ -76,21 +75,6 @@ struct HomeView: View {
                 print(failure)
             }
         })
-    }
-    
-    func fetchAllRecipes() {
-        print("fetching")
-        if let type = selectedRecipeType {
-            Database.shared.fetchRecipes(type) { result in
-                switch result {
-                case .success(let data):
-                    recipes = data
-                    print("fetched")
-                case .failure(let failure):
-                    print(failure)
-                }
-            }
-        }
     }
 }
 
