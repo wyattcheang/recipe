@@ -39,6 +39,7 @@ struct ContentView: View {
             case .authenticated:
                 HomeView()
                     .environment(\.user, user)
+                    .environment(\.alert, alert)
             }
         }
         .task {
@@ -51,6 +52,7 @@ struct ContentView: View {
                 message: Text(alert.message),
                 dismissButton: .default(Text(alert.dismissMessage)) {
                     dismiss()
+                    print("hello")
                 }
             )
         }

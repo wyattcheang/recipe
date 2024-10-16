@@ -6,11 +6,22 @@
 //
 
 import SwiftUI
-
+import SwiftData
 
 struct RecipeGridView: View {
-    @Binding var recipes: [Recipe]
-    var fetchData: () -> Void
+    @Environment(\.modelContext) var modelContext
+    @Query var recipes: [Recipe]
+    
+    init(type: RecipeType) {
+        let id = type.id
+        _recipes = Query(filter: #Predicate<Recipe> {
+            if let type_id = $0.type?.id {
+                return type_id == id
+            } else {
+                return false
+            }
+        })
+    }
     
     let spacing: CGFloat = 6
     let minColumnWidth: CGFloat = 150
@@ -23,22 +34,17 @@ struct RecipeGridView: View {
                     ForEach(0..<columns, id: \.self) { columnIndex in
                         LazyVStack(spacing: spacing) {
                             ForEach(recipes.indices.filter { $0 % columns == columnIndex }, id: \.self) { index in
-                                RecipeCardView(recipe: $recipes[index])
+                                RecipeCardView(recipe: recipes[index])
                             }
                         }
                     }
                 }
                 .padding(.horizontal, spacing / 2)
             }
-            .refreshable {
-                Task {
-                    fetchData()
-                }
-            }
         }
     }
 }
 
-#Preview {
-    RecipeGridView(recipes: .constant([]), fetchData: {})
-}
+//#Preview {
+//    RecipeGridView(type: RecipeType(id: 1, name: "Breakfast"))
+//}

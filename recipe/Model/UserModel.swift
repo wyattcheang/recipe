@@ -38,7 +38,7 @@ class UserModel {
 
 
 extension UserModel {
-    
+    @MainActor
     func signInWithEmail(email: String, password: String, completion: @escaping (Result<Bool, Error>) -> Void) async {
         self.authState = .authenticating
         do {

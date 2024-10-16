@@ -11,7 +11,7 @@ import PhotosUI
 struct RecipeMenuView: View {
     @Environment(\.dismiss) var dismiss
     
-    @Binding var recipe: Recipe
+    @Bindable var recipe: Recipe
     @Binding var alert: AlertControl
     var placeholder: String
     var action: () -> Void
@@ -57,7 +57,7 @@ struct RecipeMenuView: View {
                 VStack(alignment: .leading) {
                     headingText("Steps")
                     ForEach(Array(recipe.steps.enumerated()), id: \.element.id) { index, step in
-                        ItemLabel(text: step.description,
+                        ItemLabel(text: step.note,
                                   delete: { deleteStep(at: index) },
                                   tapped: { modifyStep(at: index) },
                                   isDraggable: true)
@@ -74,7 +74,7 @@ struct RecipeMenuView: View {
                 VStack(alignment: .leading) {
                     headingText("Notes")
                     HStack {
-                        TextField("Tips for the recipe...", text: $recipe.description, axis: .vertical)
+                        TextField("Tips for the recipe...", text: $recipe.note, axis: .vertical)
                             .padding()
                     }
                     .frame(minHeight: 100, alignment: .topLeading)
@@ -110,7 +110,6 @@ struct RecipeMenuView: View {
             .frame(maxHeight: .infinity)
         }
         .padding(.vertical, 24)
-
         .onChange(of: recipe.steps) {
             updateStepOrders()
         }
@@ -228,7 +227,7 @@ struct ItemLabel: View {
                 Image(systemName: "line.3.horizontal")
             }
             Text(text)
-                .font(.headline)
+            
             Button("delete", systemImage: "minus", action: delete)
                 .buttonStyle(CircleStyle(.small, color: Color(UIColor.systemGray4)))
         }
@@ -317,7 +316,7 @@ struct AddStepView: View {
     var body: some View {
         VStack {
             HStack {
-                TextField("Step", text: $step.description, axis: .vertical)
+                TextField("Step", text: $step.note, axis: .vertical)
                 Button("Add Recipe Step", systemImage: "plus", action: addStep)
                     .buttonStyle(CircleStyle(.small))
                     .disabled(!step.isValid)

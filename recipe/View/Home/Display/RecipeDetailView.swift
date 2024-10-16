@@ -8,10 +8,11 @@
 import SwiftUI
 
 struct RecipeDetailView: View {
+    @Environment(\.modelContext) var modelContext
     @Environment(\.dismiss) var dismiss
     @Environment(\.alert) var alert: AlertControl
     
-    @Binding var recipe: Recipe
+    @Bindable var recipe: Recipe
     @State private var servingMultiplier: Double = 1.0
     @State var isSheetPresented: Bool = false
     @State var isDeleteConfirmed: Bool = false
@@ -34,9 +35,9 @@ struct RecipeDetailView: View {
                 }
                 .background(.accent)
                 
-                if !recipe.description.isEmpty {
+                if !recipe.note.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(recipe.description)
+                        Text(recipe.note)
                     }
                 }
                 
@@ -86,7 +87,7 @@ struct RecipeDetailView: View {
             }
         }
         .sheet(isPresented: $isSheetPresented) {
-            EditRecipeView(recipe: $recipe)
+            EditRecipeView(recipe: recipe)
         }
         .confirmationDialog("Are you sure you want to delete this recipe?", isPresented: $isDeleteConfirmed, titleVisibility: .visible) {
             Button("Delete", role: .destructive) {
@@ -102,18 +103,12 @@ struct RecipeDetailView: View {
     }
     
     private func deleteRecipe() {
-        Task {
-            do {
-                let deleteSuccess = await Database.shared.deleteRecipe(recipe: recipe)
-                if deleteSuccess {
-                    dismiss()
-                    alert.title = "Success"
-                    alert.message = "Recipe deleted successfully."
-                    alert.dismissMessage = "OK"
-                }
-                alert.isPresented.toggle()
-            }
-        }
+        modelContext.delete(recipe)
+        alert.title = "Success"
+        alert.message = "Recipe deleted successfully."
+        alert.dismissMessage = "OK"
+        alert.isPresented.toggle()
+        dismiss()
     }
 }
 
@@ -177,7 +172,7 @@ struct StepsList: View {
             ForEach(steps) { step in
                 HStack(alignment: .top, spacing: 15) {
                     TextBullet("\(step.order)")
-                    Text(step.description)
+                    Text(step.note)
                         .fixedSize(horizontal: false, vertical: true)
                     
                     Spacer()
@@ -215,17 +210,17 @@ struct TextBullet: View {
 
 #Preview {
     NavigationView {
-        RecipeDetailView(recipe: .constant(Recipe(
+        RecipeDetailView(recipe: (Recipe(
             id: UUID(),
             title: "Cabbage Salad",
-            description: "A simple and refreshing cabbage salad.",
+            note: "A simple and refreshing cabbage salad.",
             serving: 2,
             type: RecipeType(id: 1, name: "Salad"),
             steps: [
-                RecipeStep(id: UUID(), order: 1, description: "Place one cabbage leaf to the side and finely shred the remaining cabbage."),
-                RecipeStep(id: UUID(), order: 2, description: "Put the cabbage in a bowl, add salt and mash the cabbage well with clean hands for a few minutes until juice begins to appear."),
-                RecipeStep(id: UUID(), order: 3, description: "Grate the ginger and add it to the cabbage, mixing and mashing well."),
-                RecipeStep(id: UUID(), order: 4, description: "Place the mashed cabbage along with the juice in a fermentation container (for example a large jar), cover the cabbage completely with the set aside cabbage leaf, and press tightly.")
+                RecipeStep(id: UUID(), order: 1, note: "Place one cabbage leaf to the side and finely shred the remaining cabbage."),
+                RecipeStep(id: UUID(), order: 2, note: "Put the cabbage in a bowl, add salt and mash the cabbage well with clean hands for a few minutes until juice begins to appear."),
+                RecipeStep(id: UUID(), order: 3, note: "Grate the ginger and add it to the cabbage, mixing and mashing well."),
+                RecipeStep(id: UUID(), order: 4, note: "Place the mashed cabbage along with the juice in a fermentation container (for example a large jar), cover the cabbage completely with the set aside cabbage leaf, and press tightly.")
             ],
             ingredients: [
                 RecipeIngredient(id: UUID(), name: "Cabbage", quantity: 1, unit: "head"),
