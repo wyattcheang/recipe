@@ -211,7 +211,6 @@ struct TextBullet: View {
 #Preview {
     NavigationView {
         RecipeDetailView(recipe: (Recipe(
-            id: UUID(),
             title: "Cabbage Salad",
             note: "A simple and refreshing cabbage salad.",
             serving: 2,
@@ -227,7 +226,7 @@ struct TextBullet: View {
                 RecipeIngredient(id: UUID(), name: "Salt", quantity: 1, unit: "tbsp"),
                 RecipeIngredient(id: UUID(), name: "Ginger", quantity: 1, unit: "inch")
             ],
-            imagePath: ""
+            image: Data()
         )))
     }
 }
